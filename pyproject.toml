@@ -1,0 +1,10 @@
+[project]
+name = "bgu-ai-agents-assignment"
+version = "0.1.0"
+description = "BGU AI Agents assignment — build a ReAct coding agent from scratch"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0.0",
+    "fastmcp>=3.4.2",
+]

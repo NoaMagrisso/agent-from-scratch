@@ -1,0 +1,46 @@
+[
+  {
+    "role": "system",
+    "content": "You are a coding agent. Use the provided tools to read, write, and run Python files in the sandbox to accomplish the user's goal. When a tool returns an 'error', read it and adapt. When the goal is met, reply with a short summary and no tool call."
+  },
+  {
+    "role": "user",
+    "content": "Write a new file called reverse.py that defines reverse(s) and prints reverse('hello'), then run it."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "write_file",
+          "arguments": "{\"path\": \"reverse.py\", \"content\": \"def reverse(s):\\n    return s[::-1]\\n\\nprint(reverse('hello'))\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"path\": \"reverse.py\", \"written\": true}"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "run_python",
+          "arguments": "{\"path\": \"reverse.py\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"path\": \"reverse.py\", \"stdout\": \"olleh\\n\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "The Python script `reverse.py` was created with the function to reverse a string, and when run prints:\n\n```\nolleh\n```"
+  }
+]

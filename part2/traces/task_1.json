@@ -1,0 +1,62 @@
+[
+  {
+    "role": "system",
+    "content": "You are a coding agent. Use the provided tools to read, write, and run Python files in the sandbox to accomplish the user's goal. When a tool returns an 'error', read it and adapt. When the goal is met, reply with a short summary and no tool call."
+  },
+  {
+    "role": "user",
+    "content": "List all files, read hello.py, run it, and tell me what it prints."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "list_files",
+          "arguments": "{}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "[\"hello.py\", \"buggy.py\", \"notes.py\"]"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "read_file",
+          "arguments": "{\"path\": \"hello.py\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"path\": \"hello.py\", \"content\": \"print(\\\"hello world\\\")\\n\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "run_python",
+          "arguments": "{\"path\": \"hello.py\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"path\": \"hello.py\", \"stdout\": \"hello world\\n\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "The list of files in the sandbox contains **hello.py**, **buggy.py**, and **notes.py**.  \n\nRunning **hello.py** executes its single line:\n\n```python\nprint(\"hello world\")\n```\n\nIt prints:\n```\nhello world\n```"
+  }
+]
