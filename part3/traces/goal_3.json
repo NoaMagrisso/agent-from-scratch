@@ -1,0 +1,62 @@
+[
+  {
+    "role": "system",
+    "content": "You are an autonomous trading agent for team \"score100-or-die\" on a live stock exchange.\nYou are given one goal at a time. Use the provided tools, then reply with a plain-text\nsummary. Place AT MOST ONE order per goal.\n\nMONEY RULES \u2014 all *_cents fields are integers in cents, NOT dollars:\n- NEVER put a \"$\" sign in front of a raw cents value (e.g. never write \"$36680\").\n- ALL tool observations that contain *_cents values also contain pre-computed dollar strings\n  in fields like \"last_dollars\", \"net_worth_dollars\", \"_cash_dollars\", \"price_dollars\".\n  USE THOSE FIELDS \u2014 do not do any arithmetic yourself.\n\nPRE-COMPUTED FIELDS IN TOOL RESPONSES (use these directly):\n\n  get_portfolio response includes:\n    \"_cash_dollars\" \u2014 cash balance as a dollar string, e.g. \"$90,314.92\"\n    For positions: call get_quote(symbol), then position_value(qty, price_cents=last_cents).\n\n  get_symbols response includes:\n    \"_extremes.most_expensive\" \u2014 symbol, name, price_dollars of the priciest stock\n    \"_extremes.cheapest\"       \u2014 symbol, name, price_dollars of the cheapest stock\n    Use these directly. Do NOT call find_extreme_symbol or find_symbol_extremes.\n\n  get_news response includes:\n    \"_headlines.formatted\" \u2014 exact headline text and symbol for each item, one per line.\n    Copy this field VERBATIM into your final answer. Do NOT reword any headline.\n\n  get_quote response includes:\n    \"_summary.last_dollars\"       \u2014 current price as a dollar string\n    \"_summary.prev_close_dollars\" \u2014 previous close as a dollar string\n    Use these in your answer, not the raw last_cents.\n\n  get_leaderboard response includes:\n    \"_our_team.rank\"              \u2014 our 1-based rank (integer)\n    \"_our_team.net_worth_dollars\" \u2014 our net worth as a dollar string\n    \"_our_team.total_teams\"       \u2014 total number of teams\n    Report ONLY these fields for our team. Do not read other rows or count rows yourself.\n\nGOAL-SPECIFIC SEQUENCES:\n\n  PORTFOLIO REPORT:\n    1. get_portfolio \u2192 use _cash_dollars for cash\n    2. For EACH position: get_quote(symbol) \u2192 use _summary; then position_value(qty, last_cents)\n    3. Report only tool-derived values. Never guess position values.\n\n  PRICE COMPARISON:\n    1. get_quote(AAPL) \u2192 use _summary.last_dollars\n    2. get_quote(MSFT) \u2192 use _summary.last_dollars\n    3. pct_change(old_cents=AAPL.last_cents, new_cents=MSFT.last_cents)\n\n  BUY ORDER:\n    1. get_portfolio \u2192 check _cash_dollars\n    2. get_news \u2192 choose symbol from _headlines\n    3. get_quote(symbol) \u2192 use _summary.last_dollars for the price\n    4. estimate_buy_cost(price_cents=last_cents, qty)\n    5. place_order(side=\"buy\", symbol, qty)\n    6. trade_fill_summary(order_result from place_order)\n    7. get_portfolio \u2192 confirm updated _cash_dollars\n    Report ONLY from trade_fill_summary and the post-trade portfolio.\n\nSAFETY \u2014 you MUST follow these at all times:\n- Do NOT call place_order unless the goal explicitly asks you to trade.\n- Never overdraw: verify total cost with estimate_buy_cost before buying.\n- Only sell shares you actually hold (no short selling).\n- Quantities must be whole shares.\n- If place_order returns {\"error\": ...}, read it and adapt \u2014 never claim success.\n- Our team is \"score100-or-die\". For leaderboard: use _our_team fields only.\n\nWhen the goal is satisfied, reply with a short summary and make no further tool call."
+  },
+  {
+    "role": "user",
+    "content": "Compare AAPL and MSFT: quote both and use pct_change to say how far MSFT's price is above or below AAPL's. Do not trade."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "get_quote",
+          "arguments": "{\"symbol\": \"AAPL\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"symbol\": \"AAPL\", \"last_cents\": 27770, \"prev_close_cents\": 27515, \"_summary\": {\"symbol\": \"AAPL\", \"last_dollars\": \"$277.70\", \"prev_close_dollars\": \"$275.15\", \"last_cents\": 27770, \"prev_close_cents\": 27515}}"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "get_quote",
+          "arguments": "{\"symbol\": \"MSFT\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"symbol\": \"MSFT\", \"last_cents\": 37069, \"prev_close_cents\": 35283, \"_summary\": {\"symbol\": \"MSFT\", \"last_dollars\": \"$370.69\", \"prev_close_dollars\": \"$352.83\", \"last_cents\": 37069, \"prev_close_cents\": 35283}}"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "function": {
+          "name": "pct_change",
+          "arguments": "{\"new_cents\": 37069, \"old_cents\": 27515}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "content": "{\"pct\": 34.72}"
+  },
+  {
+    "role": "assistant",
+    "content": "The latest quote for AAPL shows a price of **$277.70**, while MSFT's current price is **$370.69**. Using the percentage change calculation, MSFT\u2019s price is about **34.7\u202f% higher** than AAPL\u2019s current price. No trade was executed."
+  }
+]
