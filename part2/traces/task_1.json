@@ -57,6 +57,6 @@
   },
   {
     "role": "assistant",
-    "content": "The list of files in the sandbox contains **hello.py**, **buggy.py**, and **notes.py**.  \n\nRunning **hello.py** executes its single line:\n\n```python\nprint(\"hello world\")\n```\n\nIt prints:\n```\nhello world\n```"
+    "content": "The file listing was:\n\n- hello.py  \n- buggy.py  \n- notes.py  \n\n`hello.py` contains the code:\n\n```python\nprint(\"hello world\")\n```\n\nWhen run, it prints:\n\n**hello world**\n\nSo after running `hello.py`, the output is **\"hello world\"**, matching the content you see in the file."
   }
 ]

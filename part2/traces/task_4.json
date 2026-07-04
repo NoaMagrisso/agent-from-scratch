@@ -41,6 +41,6 @@
   },
   {
     "role": "assistant",
-    "content": "The file **notes.py** contains the following contents:\n\n```python\n# TODO: add input validation\n# TODO: write unit tests\ndef greet(name):\n    return f'Hello, {name}!'\n```"
+    "content": "The file **notes.py** contains the following content:\n\n```python\n# TODO: add input validation\n# TODO: write unit tests\ndef greet(name):\n    return f'Hello, {name}!'\n```"
   }
 ]

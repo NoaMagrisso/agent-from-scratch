@@ -391,7 +391,10 @@ def run_agent(goal: str) -> str:
 # ---------------------------------------------------------------------------
 TASKS = [
     "List all files, read hello.py, run it, and tell me what it prints.",
-    "Read buggy.py, identify the bug, fix it, run the fixed version, and confirm the output.",
+    (
+        "Read buggy.py, identify the bug, fix it by writing the corrected code back to buggy.py "
+        "(overwrite the same file, do not create a new file), run buggy.py, and confirm the output."
+    ),
     "Write a new file called reverse.py that defines reverse(s) and prints reverse('hello'), then run it.",
     "Search all files for the word 'TODO'. For every match, read that file and tell me its full contents.",
 ]

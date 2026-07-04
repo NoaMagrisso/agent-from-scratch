@@ -11,3 +11,6 @@ wheels/
 
 # API keys — never commit these
 .env
+
+# # Generated run traces (students produce and submit these)
+# part2/traces/task_*.json

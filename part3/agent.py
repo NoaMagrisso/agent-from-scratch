@@ -110,14 +110,19 @@ PRE-COMPUTED FIELDS IN TOOL RESPONSES (use these directly):
   get_symbols response includes:
     "_extremes.most_expensive" — symbol, name, price_dollars of the priciest stock
     "_extremes.cheapest"       — symbol, name, price_dollars of the cheapest stock
-    Use these directly. Do NOT call find_extreme_symbol or find_symbol_extremes.
+    "_extremes._survey_answer" — READY-TO-PASTE answer for market-survey goals.
+    For survey goals: copy "_extremes._survey_answer" VERBATIM into your final answer.
+    Do NOT spell or modify the symbol names — use them exactly as they appear.
 
   get_news response includes:
-    "_headlines.formatted" — exact headline text and symbol for each item, one per line.
-    Copy this field VERBATIM into your final answer. Do NOT reword any headline.
+    "_headlines.formatted"    — exact headlines, one per line, symbol after "–".
+    "_headlines._final_answer" — READY-TO-PASTE final answer for news-summary goals.
+    For news-summary goals: your final answer MUST be "_headlines._final_answer" word for word.
+    Do NOT rephrase, abbreviate, or paraphrase any headline.
 
   get_quote response includes:
     "_summary.last_dollars"       — current price as a dollar string
+    "_summary.last_cents"         — current price in cents (use this for compare_quotes)
     "_summary.prev_close_dollars" — previous close as a dollar string
     Use these in your answer, not the raw last_cents.
 
@@ -125,7 +130,9 @@ PRE-COMPUTED FIELDS IN TOOL RESPONSES (use these directly):
     "_our_team.rank"              — our 1-based rank (integer)
     "_our_team.net_worth_dollars" — our net worth as a dollar string
     "_our_team.total_teams"       — total number of teams
-    Report ONLY these fields for our team. Do not read other rows or count rows yourself.
+    "_our_team._final_answer"     — READY-TO-PASTE final answer for leaderboard goals.
+    For leaderboard goals: your final answer MUST be "_our_team._final_answer" word for word.
+    Do NOT add claims about outperforming teams or being first unless rank is 1.
 
 GOAL-SPECIFIC SEQUENCES:
 
@@ -135,9 +142,12 @@ GOAL-SPECIFIC SEQUENCES:
     3. Report only tool-derived values. Never guess position values.
 
   PRICE COMPARISON:
-    1. get_quote(AAPL) → use _summary.last_dollars
-    2. get_quote(MSFT) → use _summary.last_dollars
-    3. pct_change(old_cents=AAPL.last_cents, new_cents=MSFT.last_cents)
+    1. get_quote(AAPL) → note _summary.last_cents and _summary.last_dollars
+    2. get_quote(MSFT) → note _summary.last_cents and _summary.last_dollars
+    3. compare_quotes(aapl_last_cents=AAPL._summary.last_cents,
+                      msft_last_cents=MSFT._summary.last_cents)
+    4. Use the returned "answer" field verbatim. Do NOT use pct_change for this goal.
+       Do NOT pass prev_close_cents to compare_quotes — only last_cents.
 
   BUY ORDER:
     1. get_portfolio → check _cash_dollars
@@ -197,6 +207,28 @@ def pct_change(old_cents: int, new_cents: int) -> dict:
     return {"pct": round((new_cents - old_cents) / old_cents * 100, 2)}
 
 
+def compare_quotes(aapl_last_cents: int, msft_last_cents: int) -> dict:
+    """
+    Compare MSFT's current price to AAPL's current price and return a
+    ready-to-paste answer sentence.  Pass EACH stock's LAST_cents (not
+    prev_close_cents).  Use _summary.last_cents from each get_quote response.
+    """
+    if not aapl_last_cents:
+        return {"error": "aapl_last_cents must be non-zero"}
+    pct = round((msft_last_cents - aapl_last_cents) / aapl_last_cents * 100, 2)
+    aapl_d = cents_to_dollars(aapl_last_cents)["dollars_str"]
+    msft_d = cents_to_dollars(msft_last_cents)["dollars_str"]
+    direction = "above" if pct >= 0 else "below"
+    abs_pct = abs(pct)
+    answer = f"MSFT ({msft_d}) is {abs_pct}% {direction} AAPL ({aapl_d})."
+    return {
+        "pct": pct,
+        "aapl_dollars": aapl_d,
+        "msft_dollars": msft_d,
+        "answer": answer,
+    }
+
+
 def cents_to_dollars(cents: int) -> dict:
     """Convert a cents integer to a human-readable dollar string."""
     dollars = cents / 100
@@ -234,12 +266,21 @@ def find_team_on_leaderboard(items: list) -> dict:
     for rank, entry in enumerate(items, 1):
         if entry.get("team_name") == OUR_TEAM:
             nw = entry.get("net_worth_cents", 0)
+            nw_d = cents_to_dollars(nw)["dollars_str"]
+            total = len(items)
+            suffixes = {1: "st", 2: "nd", 3: "rd"}
+            suffix = suffixes.get(rank, "th")
+            final_answer = (
+                f"Team '{OUR_TEAM}' is ranked {rank}{suffix} out of {total} teams "
+                f"with a net worth of {nw_d}."
+            )
             return {
                 "rank": rank,
-                "total_teams": len(items),
+                "total_teams": total,
                 "team_name": OUR_TEAM,
                 "net_worth_cents": nw,
-                "net_worth_dollars": cents_to_dollars(nw)["dollars_str"],
+                "net_worth_dollars": nw_d,
+                "_final_answer": final_answer,
             }
     return {
         "error": f"Team '{OUR_TEAM}' not found in leaderboard",
@@ -296,19 +337,26 @@ def find_symbol_extremes(items: list, **_) -> dict:
         return {"error": "items list is empty"}
     most_exp = max(items, key=lambda x: x.get("last_cents", 0))
     cheapest = min(items, key=lambda x: x.get("last_cents", 0))
+    me = {
+        "symbol": most_exp.get("symbol"),
+        "name": most_exp.get("name"),
+        "last_cents": most_exp.get("last_cents"),
+        "price_dollars": cents_to_dollars(most_exp.get("last_cents", 0))["dollars_str"],
+    }
+    ch = {
+        "symbol": cheapest.get("symbol"),
+        "name": cheapest.get("name"),
+        "last_cents": cheapest.get("last_cents"),
+        "price_dollars": cents_to_dollars(cheapest.get("last_cents", 0))["dollars_str"],
+    }
+    survey_answer = (
+        f"Most expensive: {me['symbol']} ({me['name']}) at {me['price_dollars']}\n"
+        f"Cheapest: {ch['symbol']} ({ch['name']}) at {ch['price_dollars']}"
+    )
     return {
-        "most_expensive": {
-            "symbol": most_exp.get("symbol"),
-            "name": most_exp.get("name"),
-            "last_cents": most_exp.get("last_cents"),
-            "price_dollars": cents_to_dollars(most_exp.get("last_cents", 0))["dollars_str"],
-        },
-        "cheapest": {
-            "symbol": cheapest.get("symbol"),
-            "name": cheapest.get("name"),
-            "last_cents": cheapest.get("last_cents"),
-            "price_dollars": cents_to_dollars(cheapest.get("last_cents", 0))["dollars_str"],
-        },
+        "most_expensive": me,
+        "cheapest": ch,
+        "_survey_answer": survey_answer,
     }
 
 
@@ -320,17 +368,28 @@ def format_news_headlines(items: list, limit: int = 3) -> dict:
     Symbols listed as 'MKT' are market-wide news, not individual stocks — do
     not attempt to buy or quote 'MKT'.
     """
+    import re as _re
+
+    def _strip_attribution(headline: str) -> str:
+        """Remove trailing ' - Agency' source tags (e.g. ' - Reuters')."""
+        return _re.sub(r'\s*[-–]\s*[A-Z][A-Za-z\s]{0,25}$', '', headline).strip()
+
     chosen = items[:limit]
     pairs = [
         {
-            "headline": item.get("headline", ""),
+            "headline": _strip_attribution(item.get("headline", "")),
             "symbol": item.get("symbol", ""),
             "tradeable": item.get("symbol", "") not in ("MKT",),
         }
         for item in chosen
     ]
     formatted = "\n".join(f'{p["headline"]} – {p["symbol"]}' for p in pairs)
-    return {"headlines": pairs, "formatted": formatted}
+    numbered = "\n".join(
+        f'{i + 1}. {p["headline"]} ({p["symbol"]})'
+        for i, p in enumerate(pairs)
+    )
+    final_answer = f"Latest news headlines:\n{numbered}"
+    return {"headlines": pairs, "formatted": formatted, "_final_answer": final_answer}
 
 
 def quote_summary(symbol: str, last_cents: int, prev_close_cents: int) -> dict:
@@ -381,6 +440,7 @@ def trade_fill_summary(order_result: dict) -> dict:
 # reads is LOCAL_TOOLS (the JSON schema); dispatch happens through TOOL_FN.
 TOOL_FN: dict = {
     "pct_change": pct_change,
+    "compare_quotes": compare_quotes,
     "cents_to_dollars": cents_to_dollars,
     "find_extreme_symbol": find_extreme_symbol,
     "find_symbol_extremes": find_symbol_extremes,
@@ -398,17 +458,43 @@ LOCAL_TOOLS: list[dict] = [
         "function": {
             "name": "pct_change",
             "description": (
-                "Percent change between two cents prices. "
-                "Use to compare MSFT vs AAPL current prices: "
-                "old_cents=AAPL.last_cents, new_cents=MSFT.last_cents."
+                "Generic percent change between two cents prices. "
+                "For AAPL vs MSFT comparisons use compare_quotes instead."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "old_cents": {"type": "integer", "description": "baseline price in cents (e.g. AAPL last_cents)"},
-                    "new_cents": {"type": "integer", "description": "comparison price in cents (e.g. MSFT last_cents)"},
+                    "old_cents": {"type": "integer", "description": "baseline price in cents"},
+                    "new_cents": {"type": "integer", "description": "comparison price in cents"},
                 },
                 "required": ["old_cents", "new_cents"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compare_quotes",
+            "description": (
+                "Compare MSFT's current price to AAPL's and return a ready-to-paste answer. "
+                "Pass AAPL._summary.last_cents as aapl_last_cents and "
+                "MSFT._summary.last_cents as msft_last_cents. "
+                "Use the returned 'answer' field verbatim in your final answer. "
+                "Do NOT pass prev_close_cents — only last_cents."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "aapl_last_cents": {
+                        "type": "integer",
+                        "description": "AAPL current price in cents — use _summary.last_cents from get_quote(AAPL)",
+                    },
+                    "msft_last_cents": {
+                        "type": "integer",
+                        "description": "MSFT current price in cents — use _summary.last_cents from get_quote(MSFT)",
+                    },
+                },
+                "required": ["aapl_last_cents", "msft_last_cents"],
             },
         },
     },
