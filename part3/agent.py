@@ -994,6 +994,21 @@ GOALS = [
     # 7. Read-only: where do we stand against everyone else.
     "Check the leaderboard and tell me our team's rank and net worth relative"
     " to the other teams. Do not trade.",
+
+    # 8. Read-only: value the entire portfolio in dollars.
+    "Report the current market value of every position we hold: for each"
+    " symbol get a live quote, multiply by quantity, and report the total"
+    " position value in dollars. Also report the cash balance. Do not trade.",
+
+    # 9. Read-only: compare the two cheapest symbols and recommend one.
+    "Survey the market, identify the two cheapest symbols, quote both, then"
+    " use compare_quotes to show the price gap between them. Recommend which"
+    " of the two is the better value based on recent news. Do not trade.",
+
+    # 10. Trade: sell half of our largest position to lock in gains.
+    "Find our largest position by quantity. Get a live quote for it."
+    " Sell exactly half the shares (round down to a whole number)."
+    " Confirm the fill and report the remaining position size and updated cash.",
 ]
 
 
@@ -1116,7 +1131,14 @@ async def main():
     parser = argparse.ArgumentParser(description="Live MCP trading agent")
     parser.add_argument("--only", type=int, default=None, metavar="N",
                         help="run only goal N (1-based) instead of all goals")
+    parser.add_argument("--model", default=None, metavar="MODEL",
+                        help="override the Ollama model (default: %(default)s → uses MODEL constant)")
     args = parser.parse_args()
+
+    if args.model:
+        global MODEL
+        MODEL = args.model
+        print(f"[model override] using model: {MODEL}")
 
     api_key = load_api_key()
     if not api_key:

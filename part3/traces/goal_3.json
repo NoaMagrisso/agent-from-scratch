@@ -57,6 +57,6 @@
   },
   {
     "role": "assistant",
-    "content": "**AAPL current price:** $308.63  \n**MSFT current price:** $390.49  \n\nUsing the pct_change calculation, MSFT\u2019s price is **about\u202f26.5% above AAPL\u2019s price** (both values quoted in dollars). No trade was executed."
+    "content": "Here are the current prices:\n\n- **AAPL**: $308.63  \n- **MSFT**: $390.49  \n\nUsing the `pct_change` tool, MSFT\u2019s price is **approximately\u202f26.5% higher** than AAPL's price. No trade was executed."
   }
 ]
